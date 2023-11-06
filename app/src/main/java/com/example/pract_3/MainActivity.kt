@@ -1,5 +1,6 @@
 package com.example.pract_3
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -14,26 +15,44 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ReportFragment.Companion.reportFragment
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.pract_3.ui.Pink40
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -66,12 +85,10 @@ class MainActivity : AppCompatActivity() {
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
 
 
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val letDirectory = File(this.filesDir, "LET")
-        val file = File(letDirectory, "Dates.txt")
-
 
         if (!letDirectory.exists()) {
             letDirectory.mkdirs()
@@ -87,15 +104,28 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val navController = rememberNavController()
-            NavHost(
-                navController = navController,
-                startDestination = "mainFragment"
-            ) {
-                composable("mainFragment") {
-                    MainLayout(navController)
-                }
-                composable("listFragment") {
-                    MyList()
+
+            Scaffold(
+                topBar = {
+                    Box(modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Green)){
+                        Text(text = navController.currentBackStackEntryAsState().value?.destination?.route.toString())
+                    }
+                },
+                bottomBar = { BottomBarProvider(navController) }
+            ) { innerPadding ->
+                NavHost(
+                    navController = navController,
+                    startDestination = "mainFragment",
+                    modifier = Modifier.padding(innerPadding)
+                ) {
+                    composable("mainFragment") {
+                        MainLayout()
+                    }
+                    composable("listFragment") {
+                        MyList()
+                    }
                 }
             }
         }
@@ -113,10 +143,35 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @Composable
+    fun BottomBarProvider(navController: NavController){
+        BottomAppBar() {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                IconButton(onClick = { navController.navigate("mainFragment") }) {
+                    Icon(
+                        imageVector = Icons.Filled.Home,
+                        contentDescription = "Главная"
+                    )
+                }
+                Spacer(Modifier.weight(1f, true))
+
+                IconButton(onClick = { navController.navigate("listFragment") }) {
+                    Icon(
+                        imageVector = Icons.Filled.List,
+                        contentDescription = "Список дат"
+                    )
+                }
+            }
+        }
+    }
+
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun MainLayout(navController: NavController) {
+    fun MainLayout() {
         val inputvalue = remember { mutableStateOf(TextFieldValue()) }
 
         Column(
@@ -133,17 +188,6 @@ class MainActivity : AppCompatActivity() {
                         .padding(8.dp)
                 ) {
                     Text(text = "Камера")
-                }
-
-                Button(
-                    onClick = {
-                        navController.navigate("listFragment")
-                    },
-                    modifier = Modifier
-                        .size(100.dp)
-                        .padding(8.dp)
-                ) {
-                    Text(text = "Даты")
                 }
 
             }
@@ -231,7 +275,7 @@ class MainActivity : AppCompatActivity() {
         val networkDispatcher = newSingleThreadContext("Network")
         val diskDispatcher = newSingleThreadContext("Disk")
 
-        var url = URL(strUrl.trim())
+        var url = URL("https://")
 
 
         GlobalScope.launch(diskDispatcher) {
@@ -242,7 +286,7 @@ class MainActivity : AppCompatActivity() {
             withContext(Dispatchers.IO) {
                 url.openStream()
             }.use { input ->
-                FileOutputStream("${storageDir.absolutePath}/pract_6/${Date().time}.jpeg").use { output ->
+                FileOutputStream("${storageDir.absolutePath}/pract_6/${Date().time}.jpg").use { output ->
                     input.copyTo(output)
                 }
             }
